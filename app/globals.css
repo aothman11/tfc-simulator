@@ -3,10 +3,10 @@
 @tailwind utilities;
 
 :root {
-  --bg:        #081220;
-  --surface:   #111827;
-  --surface2:  #162238;
-  --surface3:  #0D1A2B;
+  --bg:        #0B1D33;
+  --surface:   #122440;
+  --surface2:  #1A3050;
+  --surface3:  #0D1F38;
   --border:    #24344A;
   --text:      #F8FAFC;
   --text-muted:#94A3B8;
