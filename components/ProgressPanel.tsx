@@ -16,163 +16,180 @@ interface ProgressPanelProps {
   sentCount: number
   failedCount: number
   sending: boolean
+  recipients: string[]
+  emailResults: Record<string, { status: 'sent' | 'failed'; time: string; reason?: string }>
+  processed: number
+  progress: number
+  elapsed: number
+  remainingText: string | null
+  formatElapsed: (ms: number) => string
 }
 
-export default function ProgressPanel({ events, total, sentCount, failedCount, sending }: ProgressPanelProps) {
-  const done = events.find(e => e.type === 'done') as Extract<ProgressEvent, { type: 'done' }> | undefined
-  const processed = sentCount + failedCount
-  const progress = total > 0 ? Math.round((processed / total) * 100) : 0
+function StatusCell({ email, idx, processed, sending, emailResults }: {
+  email: string; idx: number; processed: number; sending: boolean;
+  emailResults: Record<string, { status: 'sent' | 'failed'; time: string; reason?: string }>
+}) {
+  const result = emailResults[email]
+  if (result) {
+    if (result.status === 'sent') {
+      return (
+        <span className="status-sent">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+          Sent
+        </span>
+      )
+    }
+    return (
+      <span className="status-failed" title={result.reason}>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+        Failed
+      </span>
+    )
+  }
+  if (sending && idx === processed) {
+    return (
+      <span className="status-sending">
+        <svg className="animate-spin" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+          <path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0" strokeOpacity="0.3"/>
+          <path d="M21 12a9 9 0 00-9-9"/>
+        </svg>
+        Sending…
+      </span>
+    )
+  }
+  return (
+    <span className="status-waiting">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/>
+      </svg>
+      Waiting
+    </span>
+  )
+}
 
-  if (events.length === 0 && !sending) return null
+export default function ProgressPanel({
+  events, total, sentCount, failedCount, sending,
+  recipients, emailResults, processed, progress,
+  elapsed, remainingText, formatElapsed,
+}: ProgressPanelProps) {
+  const done = events.find(e => e.type === 'done') as Extract<ProgressEvent, { type: 'done' }> | undefined
+  const errorEvent = events.find(e => e.type === 'error') as Extract<ProgressEvent, { type: 'error' }> | undefined
+  const scheduledEvent = events.find(e => e.type === 'scheduled') as Extract<ProgressEvent, { type: 'scheduled' }> | undefined
 
   return (
-    <div className="card animate-fade-in">
-      {/* Header row */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span className={`dot ${sending ? 'dot-sending' : done ? 'dot-done' : 'dot-idle'}`} />
-          <span className="section-title-text">
-            {sending ? 'Sending…' : done ? 'Complete' : 'Progress'}
+    <div>
+      {/* Scheduled notice */}
+      {scheduledEvent && !done && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--amber-bg)', border: '1px solid var(--amber-border)', borderRadius: 8, padding: '10px 14px', marginBottom: 14 }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          <span style={{ fontSize: 13, color: 'var(--amber)' }}>
+            Scheduled for {new Date(scheduledEvent.scheduledAt).toLocaleString()} — waiting {scheduledEvent.waitSeconds}s
           </span>
         </div>
-        {total > 0 && (
-          <span style={{ fontSize: 13, color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>
-            {processed} / {total}
-          </span>
-        )}
-      </div>
+      )}
+
+      {/* Error notice */}
+      {errorEvent && (
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, background: 'var(--red-bg)', border: '1px solid var(--red-border)', borderRadius: 8, padding: '10px 14px', marginBottom: 14 }}>
+          <span style={{ color: 'var(--red)', flexShrink: 0, fontWeight: 700 }}>!</span>
+          <span style={{ fontSize: 13, color: 'var(--red)' }}>{errorEvent.message}</span>
+        </div>
+      )}
 
       {/* Progress bar */}
-      {total > 0 && (
-        <div style={{ marginBottom: 10 }}>
+      {(sending || total > 0) && (
+        <div style={{ marginBottom: 18 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+            <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>
+              {processed}<span style={{ color: 'var(--text-muted)', fontWeight: 400, fontSize: 15 }}> / {total || recipients.length}</span>
+              <span style={{ marginLeft: 10, fontSize: 13, fontWeight: 400, color: done ? 'var(--primary)' : 'var(--text-muted)' }}>
+                {done ? (failedCount === 0 ? ' ✓ All delivered' : ` · ${failedCount} failed`) : ' emails sent'}
+              </span>
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 8, fontVariantNumeric: 'tabular-nums' }}>
+              {elapsed > 0 && (
+                <span>
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ verticalAlign: '-1px', marginRight: 3 }}><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                  {formatElapsed(elapsed)}
+                </span>
+              )}
+              {remainingText && sending && (
+                <span style={{ color: 'var(--text-dim)' }}>{remainingText}</span>
+              )}
+            </div>
+          </div>
           <div className="progress-track">
             <div className="progress-fill" style={{ width: `${progress}%` }} />
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
-            <div style={{ display: 'flex', gap: 14 }}>
-              <span style={{ fontSize: 12, color: 'var(--primary)', fontWeight: 500 }}>
-                {sentCount} sent
-              </span>
-              {failedCount > 0 && (
-                <span style={{ fontSize: 12, color: 'var(--red)', fontWeight: 500 }}>
-                  {failedCount} failed
-                </span>
-              )}
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 5 }}>
+            <div style={{ display: 'flex', gap: 12 }}>
+              {sentCount > 0 && <span style={{ fontSize: 12, color: 'var(--primary)', fontWeight: 500 }}>{sentCount} sent</span>}
+              {failedCount > 0 && <span style={{ fontSize: 12, color: 'var(--red)', fontWeight: 500 }}>{failedCount} failed</span>}
             </div>
-            <span style={{ fontSize: 12, color: 'var(--text-dim)', fontVariantNumeric: 'tabular-nums' }}>
-              {progress}%
-            </span>
+            <span style={{ fontSize: 12, color: 'var(--text-dim)', fontVariantNumeric: 'tabular-nums' }}>{progress}%</span>
           </div>
         </div>
       )}
 
-      {/* Event log */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 2, maxHeight: 200, overflowY: 'auto', marginTop: 8 }}>
-        {events.map((ev, i) => <LogRow key={i} event={ev} />)}
-      </div>
+      {/* Per-email status table */}
+      {recipients.length > 0 && (
+        <div style={{ overflow: 'hidden', borderRadius: 8, border: '1px solid var(--border)' }}>
+          <table className="progress-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Email</th>
+                <th>Status</th>
+                <th>Time</th>
+              </tr>
+            </thead>
+            <tbody>
+              {recipients.map((email, idx) => {
+                const result = emailResults[email]
+                return (
+                  <tr key={email}>
+                    <td style={{ color: 'var(--text-dim)', fontVariantNumeric: 'tabular-nums', width: 32 }}>{idx + 1}</td>
+                    <td style={{ color: 'var(--text)', maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {email}
+                      {result?.status === 'failed' && result.reason && (
+                        <div style={{ fontSize: 11, color: 'var(--red)', marginTop: 2, opacity: 0.8, whiteSpace: 'normal' }}>
+                          {result.reason}
+                        </div>
+                      )}
+                    </td>
+                    <td>
+                      <StatusCell email={email} idx={idx} processed={processed} sending={sending} emailResults={emailResults} />
+                    </td>
+                    <td style={{ color: 'var(--text-dim)', fontSize: 12, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
+                      {result?.time ?? '—'}
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {/* Done summary */}
       {done && (
-        <div className={done.failedCount === 0 ? 'summary-ok animate-fade-in' : 'summary-warn animate-fade-in'}>
+        <div className={done.failedCount === 0 ? 'summary-ok animate-fade-in' : 'summary-warn animate-fade-in'} style={{ marginTop: 14 }}>
           <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>
             {done.failedCount === 0
-              ? `All ${done.sentCount} emails delivered`
+              ? `✓ All ${done.sentCount} emails delivered`
               : `${done.sentCount} sent · ${done.failedCount} failed`}
           </div>
           <div style={{ fontSize: 12.5, color: 'var(--text-muted)', marginTop: 4 }}>
             {done.failedCount === 0
               ? 'Your batch completed successfully.'
-              : 'Check the log above for details on failed sends.'}
+              : 'Check the table above for details on failed sends.'}
           </div>
         </div>
       )}
     </div>
   )
-}
-
-function LogRow({ event }: { event: ProgressEvent }) {
-  const base: React.CSSProperties = {
-    display: 'flex', alignItems: 'flex-start', gap: 9,
-    padding: '5px 8px', borderRadius: 6, fontSize: 12.5,
-  }
-
-  switch (event.type) {
-    case 'sent':
-      return (
-        <div style={base} className="animate-fade-in">
-          <span style={{ color: 'var(--primary)', fontSize: 11, fontWeight: 700, marginTop: 1, flexShrink: 0 }}>✓</span>
-          <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text)' }}>
-            {event.email}
-          </span>
-          <span style={{ fontSize: 11, color: 'var(--text-dim)', flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>
-            #{event.index}
-          </span>
-        </div>
-      )
-    case 'failed':
-      return (
-        <div style={{ ...base, flexDirection: 'column' }} className="animate-fade-in">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 9, width: '100%' }}>
-            <span style={{ color: 'var(--red)', fontSize: 11, fontWeight: 700, flexShrink: 0 }}>✗</span>
-            <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text)' }}>
-              {event.email}
-            </span>
-            <span style={{ fontSize: 11, color: 'var(--text-dim)', flexShrink: 0 }}>#{event.index}</span>
-          </div>
-          <p style={{ margin: 0, fontSize: 11.5, color: 'var(--red)', paddingLeft: 20, opacity: 0.8 }}>
-            {event.reason}
-          </p>
-        </div>
-      )
-    case 'waiting':
-      return (
-        <div style={base}>
-          <span style={{ color: 'var(--text-dim)', flexShrink: 0 }}>—</span>
-          <span style={{ color: 'var(--text-muted)' }}>Waiting {event.seconds}s…</span>
-        </div>
-      )
-    case 'countdown':
-      return (
-        <div style={base}>
-          <span style={{ color: 'var(--text-dim)', flexShrink: 0 }}>◷</span>
-          <span style={{ color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>
-            {event.remaining}s until start…
-          </span>
-        </div>
-      )
-    case 'scheduled':
-      return (
-        <div style={base} className="animate-fade-in">
-          <span style={{ color: 'var(--amber)', flexShrink: 0 }}>◷</span>
-          <span style={{ color: 'var(--text-muted)' }}>
-            Scheduled for {new Date(event.scheduledAt).toLocaleString()} — waiting {event.waitSeconds}s
-          </span>
-        </div>
-      )
-    case 'error':
-      return (
-        <div style={{ ...base, background: 'var(--red-bg)', borderRadius: 7 }} className="animate-fade-in">
-          <span style={{ color: 'var(--red)', flexShrink: 0 }}>!</span>
-          <span style={{ color: 'var(--red)' }}>{event.message}</span>
-        </div>
-      )
-    case 'start':
-      return (
-        <div style={base} className="animate-fade-in">
-          <span style={{ color: 'var(--primary)', flexShrink: 0 }}>→</span>
-          <span style={{ color: 'var(--text-muted)' }}>
-            Sending to {event.total} recipient{event.total !== 1 ? 's' : ''}…
-          </span>
-        </div>
-      )
-    case 'done':
-      return (
-        <div style={base}>
-          <span style={{ color: 'var(--text-dim)', flexShrink: 0 }}>■</span>
-          <span style={{ color: 'var(--text-muted)' }}>Finished.</span>
-        </div>
-      )
-    default:
-      return null
-  }
 }

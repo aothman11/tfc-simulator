@@ -31,9 +31,9 @@ export default function AttachmentUpload({ file, setFile }: AttachmentUploadProp
     b < 1024 ? `${b} B` : b < 1024 * 1024 ? `${(b / 1024).toFixed(1)} KB` : `${(b / (1024 * 1024)).toFixed(1)} MB`
 
   return (
-    <div className="card">
+    <div className="section-block">
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
-        <span className="section-title-text">Attachment</span>
+        <span className="section-block-title">Attachment</span>
         <span style={{ fontSize: 11, color: 'var(--text-dim)', fontWeight: 400 }}>
           Optional · PDF · max 10 MB
         </span>
