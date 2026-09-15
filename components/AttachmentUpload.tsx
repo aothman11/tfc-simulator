@@ -32,12 +32,9 @@ export default function AttachmentUpload({ file, setFile }: AttachmentUploadProp
 
   return (
     <div className="card">
-      <div className="section-title" style={{ justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span className="dot dot-green" />
-          CV / Attachment
-        </div>
-        <span style={{ fontSize: 11, color: '#3d4460', fontWeight: 400 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
+        <span className="section-title-text">Attachment</span>
+        <span style={{ fontSize: 11, color: 'var(--text-dim)', fontWeight: 400 }}>
           Optional · PDF · max 10 MB
         </span>
       </div>
@@ -47,31 +44,38 @@ export default function AttachmentUpload({ file, setFile }: AttachmentUploadProp
           className="animate-fade-in"
           style={{
             display: 'flex', alignItems: 'center', gap: 12,
-            background: '#1e2235', borderRadius: 13,
-            border: '1px solid rgba(76,175,80,0.2)', padding: '14px 16px',
+            background: 'var(--surface2)', borderRadius: 10,
+            border: '1px solid var(--border)', padding: '12px 14px',
           }}
         >
           {/* PDF icon */}
           <div style={{
-            width: 38, height: 38, borderRadius: 9,
-            background: 'rgba(239,68,68,0.12)',
+            width: 36, height: 36, borderRadius: 8,
+            background: 'var(--red-bg)',
+            border: '1px solid var(--red-border)',
             display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
           }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="#f87171">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="#ef4444">
               <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM6 20V4h5v7h7v9H6z" />
             </svg>
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: '#e2e8f0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {file.name}
             </div>
-            <div style={{ fontSize: 11, color: '#6b7fa3', marginTop: 2 }}>{fmt(file.size)}</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{fmt(file.size)}</div>
           </div>
           <button
             onClick={() => { setFile(null); if (inputRef.current) inputRef.current.value = '' }}
-            style={{ background: 'none', border: 'none', color: '#4a5568', fontSize: 20, cursor: 'pointer', padding: '0 2px', lineHeight: 1, transition: 'color 0.12s' }}
-            onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')}
-            onMouseLeave={e => (e.currentTarget.style.color = '#4a5568')}
+            style={{
+              background: 'none', border: 'none', color: 'var(--text-dim)',
+              fontSize: 18, cursor: 'pointer', padding: '2px 4px',
+              lineHeight: 1, transition: 'color 0.12s', fontFamily: 'inherit',
+              borderRadius: 4,
+            }}
+            onMouseEnter={e => (e.currentTarget.style.color = 'var(--red)')}
+            onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-dim)')}
+            title="Remove attachment"
           >
             ×
           </button>
@@ -83,16 +87,18 @@ export default function AttachmentUpload({ file, setFile }: AttachmentUploadProp
           onDragOver={e => e.preventDefault()}
           onClick={() => inputRef.current?.click()}
         >
-          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#3d4460" strokeWidth="1.5" strokeLinecap="round"
-            style={{ margin: '0 auto 12px', display: 'block' }}>
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--text-dim)" strokeWidth="1.5" strokeLinecap="round"
+            style={{ margin: '0 auto 10px', display: 'block' }}>
             <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
             <polyline points="17 8 12 3 7 8" />
             <line x1="12" y1="3" x2="12" y2="15" />
           </svg>
-          <div style={{ fontSize: 14, color: '#6b7fa3' }}>
-            Drop your PDF here, or <span style={{ color: '#4CAF50', fontWeight: 600 }}>browse</span>
+          <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+            Drop a PDF here, or <span style={{ color: 'var(--primary)', fontWeight: 500 }}>browse</span>
           </div>
-          <div style={{ fontSize: 12, color: '#3d4460', marginTop: 6 }}>Attached to every email in this batch</div>
+          <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 5 }}>
+            Attached to every email in this batch
+          </div>
         </div>
       )}
 
