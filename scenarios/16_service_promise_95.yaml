@@ -1,0 +1,5 @@
+# Scenario: Raise service promise to 95%
+description: "Raise service-level promise from 94% to 95%"
+seed: 42
+overrides:
+  service_promise: 0.95

@@ -1,0 +1,114 @@
+# Round 2 baseline settings — the "Hold Round 2" scenario
+# All values from real game; see section 3 of the prompt.
+
+round: 2
+
+production:
+  interval_days: 10
+  frozen_period_weeks: 2
+  safety_stock_weeks:
+    orange_1l: 2.3
+    c_power_1l: 2.5
+    mango_1l: 2.2
+    orange_pet: 2.0
+    c_power_pet: 2.5
+    mango_pet: 2.2
+
+purchasing:
+  safety_stock_weeks:
+    pet: 1.5
+    pack: 1.7
+    orange: 1.9
+    mango: 1.9
+    vitamin_c: 4.0
+  lot_size_weeks:
+    pet: 2.0
+    pack: 2.5
+    orange: 2.5
+    mango: 4.0
+    vitamin_c: 4.0
+  vmi_active:
+    orange: true
+    pet: false
+    pack: false
+    mango: false
+    vitamin_c: false
+  payment_term_weeks:   # all suppliers in R2
+    orange: 8
+    pet: 8
+    pack: 8
+    mango: 8
+    vitamin_c: 8
+
+warehouses:
+  rm_locations: 700
+  rm_perm_fte: 3
+  fg_locations: 1100
+  fg_perm_fte: 4
+  inflate_pet: false
+  rm_inspection_all: true
+  intake_days: 5
+
+bottling:
+  line: swiss_fill_2
+  shifts: 2
+  projects:
+    preventive_maintenance: a_little
+    solve_breakdowns_training: yes
+    smed: true
+    increase_speed: true
+
+customers:
+  vmi_active:
+    fg: false
+    land: false
+    dominicks: false
+  payment_term_weeks:
+    fg: 1
+    land: 1
+    dominicks: 1
+  service_promise: 0.94
+  requested_shelf_life_pct: 0.78
+  promotional_pressure:
+    fg: heavy
+    land: middle
+    dominicks: none
+  promotion_horizon:
+    fg: short
+    land: short
+    dominicks: short
+  trade_unit:
+    fg: pallet_layer
+    land: pallet_layer
+    dominicks: box
+  order_deadline:
+    fg: "20:00"
+    land: "17:00"
+    dominicks: "20:00"
+
+forecast_adjustment_pct:
+  orange_1l: 0
+  c_power_1l: 0
+  mango_1l: 0
+  orange_pet: 0
+  c_power_pet: 0
+  mango_pet: 0
+
+# R2 results — targets for calibration
+results_r2:
+  operating_profit: 215399
+  investment: 3517221
+  roi: 0.0612
+  realized_revenue: 2723905
+  contracted_revenue: 2711810
+  bonus_penalty: 12095
+  product_bias:
+    orange_1l: 0.009
+    c_power_1l: -0.039
+    mango_1l: 0.007
+    orange_pet: -0.009
+  product_service_lines:
+    orange_1l: 0.936
+    c_power_1l: 0.917
+    mango_1l: 0.959
+    orange_pet: 0.970

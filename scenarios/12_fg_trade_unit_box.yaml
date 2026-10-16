@@ -1,0 +1,5 @@
+# Scenario: F&G trade unit changed to box (from pallet layer)
+description: "F&G trade unit: pallet_layer → box (smaller = better index)"
+seed: 42
+overrides:
+  trade_unit.fg: box

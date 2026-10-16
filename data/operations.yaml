@@ -1,0 +1,149 @@
+# Operations settings — from real game data (section 3.6)
+
+mixer:
+  id: fruitmix_mq
+  name: "Fruitmix MQ"
+  investment: 312000
+  fixed_cost_per_round: 31000
+  variable_cost_per_round_r2: 151000   # calibrated to R2; scales with volume
+  alternatives:
+    - id: megachurn_20
+      name: "MegaChurn 20"
+      investment: null      # unknown
+      fixed_cost_per_round: null
+      variable_cost_per_round: null
+    - id: fmm_4000
+      name: "FMM 4000"
+      investment: null
+      fixed_cost_per_round: null
+      variable_cost_per_round: null
+
+bottling_line:
+  id: swiss_fill_2
+  name: "Swiss Fill 2"
+  investment: 490000
+  operators_per_shift: 5
+  shifts: 2
+  operator_cost_per_year: 20000      # €20K per operator per year → €200K/round for 10 operators
+  fixed_cost_per_year: 98000
+  speed_lph: 3100                    # liters per hour (base)
+  changeover_hours_same_type: 2      # 2h changeover within carton/PET
+  changeover_hours_cross_type: 4     # 4h changeover between carton and PET
+  startup_loss_pct: 0.10             # 10% of production time lost to startup
+  shift_hours_per_week: 80           # 2 shifts × 8h × 5 days
+  projects:
+    preventive_maintenance: a_little
+    solve_breakdowns_training: yes
+    smed: true
+    increase_speed: true
+  project_cost_per_round: 29000
+  breakdown_probability_base: 0.05   # ASSUMPTION: baseline without maintenance
+
+  alternatives:
+    - id: swiss_fill_1
+      name: "Swiss Fill 1"
+      investment: 490000
+      operators_per_shift: 5
+      shifts: 2
+      speed_lph: 3100
+      changeover_hours_same_type: 2
+      changeover_hours_cross_type: 4
+      startup_loss_pct: 0.10
+
+    - id: multiflex_1
+      name: "MultiFlex 1"
+      investment: null       # unknown
+      operators_per_shift: 6
+      shifts: 2
+      speed_lph: 2950
+      changeover_hours_same_type: null   # shorter than Swiss Fill, exact UNVERIFIED
+      changeover_hours_cross_type: null
+      startup_loss_pct: 0.10
+
+    - id: topspeed_1
+      name: "TopSpeed 1"
+      investment: 570000
+      operators_per_shift: 4
+      shifts: 2
+      speed_lph: 3250
+      fixed_cost_extra_per_year: 16000
+      changeover_hours_same_type: 4
+      changeover_hours_cross_type: 6
+      startup_loss_pct: 0.15
+      narrow_tolerances: true          # breaks down on off-spec packaging
+
+# INFLATE PET module (section 3.6)
+inflate_pet:
+  investment: 700000
+  running_cost_per_year: 140000      # €70K per round
+  preform_cost_fraction_of_bottle: 0.373  # calibrated: R3 PET €100,024 / R2 PET €268,342 = 37.3%
+  storage_space_fraction: 0.10       # ~10× less space for preforms
+  supplier_id: pet                   # same PET supplier, Netherlands
+
+warehouses:
+  raw_material:
+    r2_locations: 700
+    r2_usage: 635
+    r2_perm_fte: 3
+    intake_days: 5
+    location_cost_per_round: 100     # €100/location/round
+    overflow_cost_per_pallet_per_day: 3.0
+    intake_hours_per_order_line: 1.0
+    intake_hours_per_pallet: 0.1     # 6 minutes
+    inspection_hours_per_order_line: 2.0  # when inspection ticked
+    inspection_active_r2: true       # all 5 suppliers inspected
+
+  finished_goods:
+    r2_locations: 1100
+    r2_usage: 939
+    r2_perm_fte: 4
+    r2_pallets_out_per_week: 346
+    location_cost_per_round: 100
+    overflow_cost_per_pallet_per_day: 3.0
+    picking_time_per_order_line_min: 10
+    picking_time_per_pallet_min: 6
+    picking_time_per_item_min: null    # UNVERIFIED — see assumptions.yaml
+
+labour:
+  fte_cost_per_year: 40000
+  fte_cost_per_round: 20000
+  flexible_labour_per_hour: 42
+  weeks_per_round: 26
+
+# Outsourcing options (section 3.6)
+outsourcing_fg:
+  conventional:
+    cost_per_pallet_per_day: 1.30
+    intake_per_pallet: 1.25
+    outbound_per_order_line: 3.00
+  automated:
+    cost_per_pallet_per_day: 1.50
+    intake_per_pallet: 1.00
+    outbound_per_order_line: 2.50
+  mcc:
+    annual_fee: 10000
+    outbound_cost_reduction_max: 0.05    # up to 5% lower
+    price_benefit_max: 0.005             # up to +0.5% price ASSUMPTION
+
+# Interest
+interest:
+  annual_rate: 0.15
+  per_round_rate: 0.075
+
+# R2 actual cost data for calibration
+r2_costs:
+  bottling_permanent_staff: 200000
+  bottling_flexible: 27800
+  rm_locations: 70000          # 700 × €100
+  rm_overflow: 16500
+  fg_locations: 110000         # 1,100 × €100
+  fg_overflow: 9600
+  scrap: 52800
+  risk: 52800
+  obsoletes_total: 105600      # scrap + risk
+  supplier_administration: 100000
+  distribution: 198000
+  interest_net: -4400          # negative = net income from payment terms
+  projects: 29000
+  overhead_other: 149000       # catch-all overhead
+  mixing_total_r2: 182000      # fixed €31K + variable €151K (approx)

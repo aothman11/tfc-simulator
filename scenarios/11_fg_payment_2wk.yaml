@@ -1,0 +1,5 @@
+# Scenario: F&G payment term 2 weeks (from 1)
+description: "F&G customer payment term extended to 2 weeks"
+seed: 42
+overrides:
+  customer_payment_terms.fg: 2

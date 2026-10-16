@@ -1,0 +1,94 @@
+# Round 3 current screen state — from screenshots 16 Oct 2026 (section 3.10)
+# NOTE: these may include unsaved tests, NOT the final Round 3 submission.
+
+round: 3
+
+production:
+  interval_days: 10
+  frozen_period_weeks: 2
+  safety_stock_weeks:
+    orange_1l: 2.5    # updated vs R2 (was 2.3)
+    c_power_1l: 2.7   # updated vs R2 (was 2.5)
+    mango_1l: 2.2
+    orange_pet: 2.0
+    c_power_pet: 2.5
+    mango_pet: 2.2
+
+purchasing:
+  safety_stock_weeks:
+    pet: 2.0          # updated vs R2 (was 1.5)
+    pack: 1.7
+    orange: 1.9
+    mango: 1.9
+    vitamin_c: 4.0
+  lot_size_weeks:
+    pet: 3.0          # updated vs R2 (was 2.0)
+    pack: 2.5
+    orange: 2.5
+    mango: 4.0
+    vitamin_c: 4.0
+  vmi_active:
+    orange: true      # still active from R2
+    pet: false
+    pack: false
+    mango: false
+    vitamin_c: false
+  payment_term_weeks:
+    orange: 8
+    pet: 8
+    pack: 8
+    mango: 8
+    vitamin_c: 8
+
+warehouses:
+  rm_locations: 200   # CHANGED from 700 — test in progress
+  rm_perm_fte: 2      # CHANGED from 3
+  fg_locations: 1100  # unchanged
+  fg_perm_fte: 4
+  inflate_pet: true   # TICKED — test in progress
+  rm_inspection_all: true
+  intake_days: 5
+
+bottling:
+  line: swiss_fill_2
+  shifts: 2
+  projects:
+    preventive_maintenance: a_little
+    solve_breakdowns_training: yes
+    smed: true
+    increase_speed: true
+
+customers:
+  vmi_active:
+    fg: true          # ticked — changes trade_unit to Pallet and deadline to 14:00
+    land: false
+    dominicks: false
+  payment_term_weeks:
+    fg: 1
+    land: 1
+    dominicks: 1
+  promotional_pressure:
+    fg: heavy
+    land: heavy       # CHANGED from middle
+    dominicks: none
+  promotion_horizon:
+    fg: long          # CHANGED from short
+    land: long        # CHANGED from short
+    dominicks: short
+  trade_unit:
+    fg: pallet         # changed by VMI
+    land: pallet_layer
+    dominicks: box
+  order_deadline:
+    fg: "14:00"        # changed by VMI
+    land: "17:00"
+    dominicks: "20:00"
+  # NOTE: F&G index fell to 0.9846, LAND to 0.9601, DOM unchanged 1.0545
+
+forecast_adjustment_pct:
+  orange_1l: 0
+  c_power_1l: 0
+  mango_1l: 0
+  orange_pet: 0
+  c_power_pet: 0
+  mango_pet: 0

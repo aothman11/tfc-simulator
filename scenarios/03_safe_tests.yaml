@@ -1,0 +1,9 @@
+# Scenario: Safe tests only (confirmed from real game data)
+description: "Orange VMI + FG safety stock slightly higher"
+seed: 42
+overrides:
+  supplier_vmi.orange: true
+  fg_safety_stock_weeks.orange_1l: 2.5
+  fg_safety_stock_weeks.c_power_1l: 2.7
+  rm_safety_stock_weeks.pet: 2.0
+  rm_lot_size_weeks.pet: 3.0

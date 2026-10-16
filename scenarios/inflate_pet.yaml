@@ -1,0 +1,7 @@
+# Main Inflate PET scenario (for montecarlo command)
+description: "Inflate PET — primary MC analysis scenario"
+seed: 42
+overrides:
+  inflate_pet: true
+  rm_locations: 500
+  rm_perm_fte: 2

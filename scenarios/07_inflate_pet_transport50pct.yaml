@@ -1,0 +1,7 @@
+# Scenario: Inflate PET with 50% transport saving
+description: "Inflate PET with 50% PET transport cost saving"
+seed: 42
+overrides:
+  inflate_pet: true
+assumption_overrides:
+  inflate_pet_transport_saving_pct: 0.50

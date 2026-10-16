@@ -1,0 +1,5 @@
+# Scenario: MCC outsourcing of FG warehouse
+description: "Switch FG warehouse to MCC outsourcing"
+seed: 42
+overrides:
+  outsource_fg: mcc

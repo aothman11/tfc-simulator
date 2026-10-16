@@ -1,0 +1,5 @@
+# Scenario: Replace bottling line with TopSpeed 1
+description: "Switch from Swiss Fill 2 to TopSpeed 1 bottling line"
+seed: 42
+overrides:
+  bottling_line: topspeed_1

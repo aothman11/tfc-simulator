@@ -1,0 +1,9 @@
+# Scenario: Orange VMI only (already active in R2; this holds it on)
+description: "Orange VMI active (R2 setting, carried forward)"
+seed: 42
+overrides:
+  supplier_vmi.orange: true
+  supplier_vmi.pet: false
+  supplier_vmi.pack: false
+  supplier_vmi.mango: false
+  supplier_vmi.vitamin_c: false

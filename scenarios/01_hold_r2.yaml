@@ -1,0 +1,4 @@
+# Scenario: Hold Round 2 settings exactly
+description: "Hold all Round 2 settings unchanged into Round 3"
+seed: 42
+overrides: {}

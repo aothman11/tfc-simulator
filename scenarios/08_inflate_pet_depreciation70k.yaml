@@ -1,0 +1,7 @@
+# Scenario: Inflate PET with extra depreciation €70K/round
+description: "Inflate PET with €70K/round additional depreciation on €700K investment"
+seed: 42
+overrides:
+  inflate_pet: true
+assumption_overrides:
+  inflate_depreciation_per_round: 70000

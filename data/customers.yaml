@@ -1,0 +1,76 @@
+# Customer definitions — from real game data (section 3.4)
+customers:
+  - id: fg
+    name: "Food & Groceries"
+    short: "F&G"
+    contract_index_r2: 0.9959
+    service_type: order_lines
+    service_promise: 0.94
+    requested_shelf_life_pct: 0.78
+    order_deadline: "20:00"
+    trade_unit: pallet_layer
+    payment_term_weeks: 1
+    promotional_pressure: heavy
+    promotion_horizon: short
+    stores: 500
+    market_share_pct: 0.10
+    value_for_money: true
+    products: all
+    priority: 1
+    contracted_revenue_r2: 1366425   # actual R2 from finance report
+
+  - id: land
+    name: "LAND Market"
+    short: "LAND"
+    contract_index_r2: 0.9623
+    service_type: order_lines
+    service_promise: 0.94
+    requested_shelf_life_pct: 0.78
+    order_deadline: "17:00"
+    trade_unit: pallet_layer
+    payment_term_weeks: 1
+    promotional_pressure: middle
+    promotion_horizon: short
+    stores: 300
+    market_share_pct: 0.08
+    value_for_money: true
+    products: all
+    priority: 2
+    contracted_revenue_r2: 633347   # actual R2 from finance report
+
+  - id: dominicks
+    name: "Dominick's"
+    short: "DOM"
+    contract_index_r2: 1.0545
+    service_type: order_lines
+    service_promise: 0.94
+    requested_shelf_life_pct: 0.78
+    order_deadline: "20:00"
+    trade_unit: box
+    payment_term_weeks: 1
+    promotional_pressure: none
+    promotion_horizon: short
+    stores: 50
+    market_share_pct: 0.02
+    value_for_money: false    # UNVERIFIED per section 3.4
+    products: pet_only
+    priority: 3
+    contracted_revenue_r2: 712038   # actual R2 from finance report
+
+# Round 2 actuals (for calibration)
+r2_actuals:
+  total_contracted_revenue: 2711810   # FG 1366425 + LAND 633347 + DOM 712038
+  total_realized_revenue: 2723905
+  total_bonus_penalty: 12095
+  bonus_by_customer:
+    fg: 4486
+    land: 3995
+    dominicks: 3615
+  service_order_lines_by_customer:
+    - 0.943
+    - 0.952
+    - 0.953    # order not confirmed per notes
+  service_orders_by_customer:
+    - 0.904
+    - 0.921
+    - 0.939

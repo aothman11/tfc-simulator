@@ -1,0 +1,5 @@
+# Scenario: Shelf life requested 75%
+description: "Reduce requested shelf life to 75% (from 78%)"
+seed: 42
+overrides:
+  requested_shelf_life_pct: 0.75

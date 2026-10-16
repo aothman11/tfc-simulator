@@ -1,0 +1,98 @@
+# Supplier definitions — from real game data (section 3.5)
+suppliers:
+  - id: orange
+    name: "Miami Oranges"
+    component: orange
+    purchase_value_r2: 433498
+    basic_price_per_liter: 0.40    # UNVERIFIED per section 3.5 notes
+    lead_time_days: 30
+    agreed_reliability: 0.98
+    delivery_window_days: 1
+    quality: high
+    trade_unit: tank
+    payment_term_weeks: 8
+    location: overseas
+    supplier_index_r2: 1.0         # baseline (no changes in R2)
+    vmi_active_r2: true            # Orange VMI was accepted in R2
+    vmi_cost_per_round: 2500
+    vmi_limits_r2:
+      lower_weeks: 1.9
+      upper_weeks: 4.0
+    vmi_index_delta_r2: -0.0157   # real test: index fell from 1.0091 to 0.9934
+    safety_stock_weeks: 1.9
+    lot_size_weeks: 2.5
+
+  - id: pet
+    name: "Philyp Jones Plastics"
+    component: pet
+    purchase_value_r2: 268342
+    transport_cost_r2: 96218
+    basic_price_per_unit: 0.40     # UNVERIFIED per section 3.5 notes (per bottle)
+    lead_time_days: 5
+    trade_unit: truck
+    transport_rate: 20             # €20 per pallet OR €500 per truck
+    transport_per_shipment: 100
+    payment_term_weeks: 8
+    location: netherlands
+    supplier_index_r2: 1.0
+    vmi_active_r2: false
+    vmi_cost_per_round: 2500
+    safety_stock_weeks: 1.5        # R2; R3 screen shows 2.0
+    lot_size_weeks: 2.0            # R2; R3 screen shows 3.0
+    pallet_units: 1080             # 1,080 PET bottles per pallet
+
+  - id: pack
+    name: "Mono Packaging"
+    component: pack
+    purchase_value_r2: 120792
+    basic_price_per_unit: 0.03     # UNVERIFIED per section 3.5 notes
+    payment_term_weeks: 8
+    rejection_rate: 0.035          # 3.5% rejections (not certified)
+    certified: false
+    supplier_index_r2: 1.0
+    vmi_active_r2: false
+    vmi_cost_per_round: 2500
+    safety_stock_weeks: 1.7
+    lot_size_weeks: 2.5
+    pallet_units: 17280            # 17,280 packs per pallet
+
+  - id: mango
+    name: "NO8DO Mango"
+    component: mango
+    purchase_value_r2: 87399
+    basic_price_per_liter: 0.90    # UNVERIFIED
+    payment_term_weeks: 8
+    supplier_index_r2: 1.0
+    vmi_active_r2: false
+    vmi_cost_per_round: 2500
+    safety_stock_weeks: 1.9
+    lot_size_weeks: 4.0
+    trade_unit: drum_ib_tank        # drum 250L, IBC 1000L, tank 30000L
+
+  - id: vitamin_c
+    name: "Seitan Vitamins"
+    component: vitamin_c
+    purchase_value_r2: 2493
+    basic_price_per_liter: 0.15    # UNVERIFIED
+    payment_term_weeks: 8
+    supplier_index_r2: 1.0
+    vmi_active_r2: false
+    vmi_cost_per_round: 2500
+    safety_stock_weeks: 4.0
+    lot_size_weeks: 4.0
+
+# Component shelf life
+component_shelf_life_weeks: 52
+
+# Supplier admin cost
+supplier_admin_cost_per_supplier_per_round: 20000  # 5 suppliers × €20K = €100K R2
+
+# Break-even VMI thresholds (purchase_value / 2500 per round = min index drop needed)
+# orange: 2500/433498 = 0.0058; pet: 2500/268342 = 0.0093;
+# pack: 2500/120792 = 0.021; mango: 2500/87399 = 0.029
+vmi_break_even_index_drop:
+  orange: 0.0058
+  pet: 0.0093
+  pack: 0.0207
+  mango: 0.0286
+  vitamin_c: 1.0     # never worth it at €2,493 purchase

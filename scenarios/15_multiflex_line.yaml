@@ -1,0 +1,5 @@
+# Scenario: Replace bottling line with MultiFlex 1
+description: "Switch from Swiss Fill 2 to MultiFlex 1 bottling line"
+seed: 42
+overrides:
+  bottling_line: multiflex_1

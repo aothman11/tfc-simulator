@@ -1,0 +1,7 @@
+# Scenario: Inflate PET alone, everything else R2
+description: "Inflate PET module added; all other settings unchanged from R2"
+seed: 42
+overrides:
+  inflate_pet: true
+# Inflate PET adds €700K investment, €70K/round running cost,
+# PET preforms cost half, transport saving is UNVERIFIED

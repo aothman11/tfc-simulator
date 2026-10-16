@@ -1,0 +1,106 @@
+# Finished product definitions — all values from real game data (section 3.2)
+products:
+  - id: orange_1l
+    name: "Orange 1 liter"
+    demand_base_week: 70100
+    demand_actual_r2_week: 70112
+    pieces_per_box: 10
+    pieces_per_layer: 120
+    pieces_per_pallet: 600
+    liters_per_piece: 1.0
+    basic_price: 0.45
+    shelf_life_weeks: 20
+    type: carton_1l
+
+  - id: c_power_1l
+    name: "Orange/C-power 1 liter"
+    demand_base_week: 11900
+    demand_actual_r2_week: 11862
+    pieces_per_box: 10
+    pieces_per_layer: 120
+    pieces_per_pallet: 600
+    liters_per_piece: 1.0
+    basic_price: 0.55
+    shelf_life_weeks: 20
+    type: carton_1l
+
+  - id: mango_1l
+    name: "Orange/Mango 1 liter"
+    demand_base_week: 44000
+    demand_actual_r2_week: 44009
+    pieces_per_box: 10
+    pieces_per_layer: 120
+    pieces_per_pallet: 600
+    liters_per_piece: 1.0
+    basic_price: 0.48
+    shelf_life_weeks: 20
+    type: carton_1l
+
+  - id: orange_pet
+    name: "Orange PET"
+    demand_base_week: 119200
+    demand_actual_r2_week: 119206
+    pieces_per_box: 24
+    pieces_per_layer: 288
+    pieces_per_pallet: 5293
+    liters_per_piece: 0.3
+    basic_price: 0.22
+    shelf_life_weeks: 20
+    type: pet_bottle
+
+  - id: c_power_pet
+    name: "Orange/C-power PET"
+    demand_base_week: 17900
+    demand_actual_r2_week: 17900   # actual R2 not confirmed; marked in assumptions
+    pieces_per_box: 24
+    pieces_per_layer: 288
+    pieces_per_pallet: 5293
+    liters_per_piece: 0.3
+    basic_price: 0.32
+    shelf_life_weeks: 20
+    type: pet_bottle
+
+  - id: mango_pet
+    name: "Orange/Mango PET"
+    demand_base_week: 51600
+    demand_actual_r2_week: 51600   # actual R2 not confirmed; marked in assumptions
+    pieces_per_box: 24
+    pieces_per_layer: 288
+    pieces_per_pallet: 5293
+    liters_per_piece: 0.3
+    basic_price: 0.25
+    shelf_life_weeks: 20
+    type: pet_bottle
+
+# Bill of materials: ingredient fractions per liter of finished product
+# These are ASSUMPTIONS — calibrated to match R2 purchase values
+# See assumptions.yaml: bom_orange_fraction, bom_mango_fraction, bom_vitc_fraction
+bom:
+  # fraction of each liter that is each ingredient (liters of ingredient per liter of product)
+  orange_1l:
+    orange: 0.285      # assumption: bom_orange_1l
+    pack: 1.0          # 1 pack unit per piece (normalized)
+  c_power_1l:
+    orange: 0.285
+    vitamin_c: 0.0006  # trace vitamin C
+    pack: 1.0
+  mango_1l:
+    orange: 0.19       # less orange in mango blend
+    mango: 0.095       # assumption: bom_mango_fraction
+    pack: 1.0
+  orange_pet:
+    orange: 0.285
+    pet: 1.0           # 1 PET bottle per piece (normalized per piece, not per liter)
+  c_power_pet:
+    orange: 0.285
+    vitamin_c: 0.0006
+    pet: 1.0
+  mango_pet:
+    orange: 0.19
+    mango: 0.095
+    pet: 1.0
+
+# Distribution
+distribution:
+  dc_netherlands: true
+  cost_per_pallet: 31.0  # € per pallet
