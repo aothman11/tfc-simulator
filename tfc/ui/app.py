@@ -150,13 +150,26 @@ def run_and_store():
 with st.sidebar:
     _sv = st.session_state.sidebar_view
 
+    # Compact nav CSS override (smaller buttons in sidebar)
+    st.markdown("""
+<style>
+[data-testid="stSidebar"] div[data-testid="stButton"] > button {
+    font-size: 11px !important;
+    padding: 4px 8px !important;
+    min-height: 28px !important;
+    height: auto !important;
+    line-height: 1.3 !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
     def _nav_btn(label: str, view_key, icon: str):
         active = _sv == view_key
         if active:
             st.markdown(
-                f'<div style="background:#8b1a4a;border-radius:5px;padding:8px 10px;'
-                f'margin:3px 0;cursor:default;text-align:center;">'
-                f'<span style="font-size:18px;">{icon}</span><br>'
+                f'<div style="background:#8b1a4a;border-radius:4px;padding:4px 8px;'
+                f'margin:2px 0;text-align:left;display:flex;align-items:center;gap:6px;">'
+                f'<span style="font-size:13px;">{icon}</span>'
                 f'<span style="font-size:11px;font-weight:700;color:white;">{label}</span>'
                 f'</div>',
                 unsafe_allow_html=True,
@@ -168,7 +181,7 @@ with st.sidebar:
 
     _nav_btn("My Company", None, "📋")
     _nav_btn("Finance", "finance", "💰")
-    _nav_btn("Production interval tool", "pit", "⚙️")
+    _nav_btn("Prod. interval tool", "pit", "⚙️")
     st.divider()
 
     # Round selector styled as dots
