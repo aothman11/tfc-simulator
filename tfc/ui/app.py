@@ -122,6 +122,8 @@ if "assumption_overrides" not in st.session_state:
     st.session_state.assumption_overrides = {}
 if "sidebar_view" not in st.session_state:
     st.session_state.sidebar_view = None
+if "active_round" not in st.session_state:
+    st.session_state.active_round = 3
 if "finance_expand" not in st.session_state:
     st.session_state.finance_expand = False
 if "pit_line" not in st.session_state:
@@ -184,38 +186,52 @@ with st.sidebar:
     _nav_btn("Prod. interval tool", "pit", "⚙️")
     st.divider()
 
-    # Round selector styled as dots
+    # Round selector — clickable dots
     st.markdown(
-        '<div style="background:#f27d00;padding:6px;border-radius:4px;text-align:center;'
-        'font-size:12px;font-weight:700;margin-bottom:8px;">🍊 Round</div>',
+        '<div style="background:#f27d00;padding:5px 8px;border-radius:4px;text-align:center;'
+        'font-size:11px;font-weight:700;margin-bottom:6px;">🍊 Round</div>',
         unsafe_allow_html=True,
     )
+    ROUND_SCENARIOS = {2: "r2", 3: "r3"}  # rounds with available scenarios
+    _ar = st.session_state.active_round
     for r_num in range(5):
-        dot_color = "#8b1a4a" if r_num == 0 else "#555"
-        st.markdown(
-            f'<div style="display:flex;align-items:center;gap:8px;padding:3px 8px;">'
-            f'<span style="display:inline-block;width:12px;height:12px;border-radius:50%;'
-            f'background:{dot_color};"></span>'
-            f'<span style="font-size:13px;">{r_num}</span>'
-            f'</div>',
+        dot_color = "#8b1a4a" if r_num == _ar else "#555"
+        available = r_num in ROUND_SCENARIOS
+        col_dot, col_lbl, col_btn = st.columns([1, 1, 3])
+        col_dot.markdown(
+            f'<div style="padding-top:6px;">'
+            f'<span style="display:inline-block;width:11px;height:11px;border-radius:50%;'
+            f'background:{dot_color};"></span></div>',
             unsafe_allow_html=True,
         )
+        col_lbl.markdown(
+            f'<div style="padding-top:4px;font-size:13px;color:white;">{r_num}</div>',
+            unsafe_allow_html=True,
+        )
+        if available and r_num != _ar:
+            if col_btn.button(f"Load", key=f"round_btn_{r_num}", use_container_width=True):
+                from tfc.engine.simulation import build_r3_scenario
+                if ROUND_SCENARIOS[r_num] == "r2":
+                    st.session_state.params = build_r2_scenario()
+                else:
+                    st.session_state.params = build_r3_scenario()
+                st.session_state.active_round = r_num
+                st.session_state.result = None
+                st.rerun()
+        elif r_num == _ar:
+            col_btn.markdown(
+                '<span style="font-size:10px;color:#f27d00;font-weight:700;">● active</span>',
+                unsafe_allow_html=True,
+            )
+        else:
+            col_btn.markdown(
+                '<span style="font-size:10px;color:#888;">—</span>',
+                unsafe_allow_html=True,
+            )
     st.divider()
 
-    # Presets & file upload
-    st.markdown("**Load preset:**")
-    presets = {"Round 2 baseline": "r2", "Round 3 (current screen)": "r3"}
-    preset = st.selectbox("Preset", list(presets.keys()), label_visibility="collapsed")
-    if st.button("Load preset"):
-        from tfc.engine.simulation import build_r3_scenario
-        if presets[preset] == "r2":
-            st.session_state.params = build_r2_scenario()
-        else:
-            st.session_state.params = build_r3_scenario()
-        st.session_state.result = None
-        st.rerun()
-
-    uploaded = st.file_uploader("Upload scenario YAML", type=["yaml", "yml"])
+    st.markdown('<div style="font-size:11px;color:rgba(255,255,255,0.6);margin-bottom:4px;">Upload scenario:</div>', unsafe_allow_html=True)
+    uploaded = st.file_uploader("", type=["yaml", "yml"], label_visibility="collapsed")
     if uploaded:
         import yaml
         from tfc.engine.scenarios import load_scenario
