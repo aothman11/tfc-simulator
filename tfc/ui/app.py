@@ -442,19 +442,19 @@ with tab_log:
     params = st.session_state.params
 
     st.subheader("Real game index overrides (optional)")
-    ri_fg = st.number_input("F&G real index (from game)", 0.90, 1.20, value=0.0, step=0.0001,
+    ri_fg = st.number_input("F&G real index (from game)", 0.90, 1.20, value=0.90, step=0.0001,
                             format="%.4f", key="ri_fg")
-    ri_land = st.number_input("LAND real index (from game)", 0.90, 1.20, value=0.0, step=0.0001,
+    ri_land = st.number_input("LAND real index (from game)", 0.90, 1.20, value=0.90, step=0.0001,
                               format="%.4f", key="ri_land")
-    ri_dom = st.number_input("Dominick's real index (from game)", 0.90, 1.20, value=0.0, step=0.0001,
+    ri_dom = st.number_input("Dominick's real index (from game)", 0.90, 1.20, value=0.90, step=0.0001,
                              format="%.4f", key="ri_dom")
 
     real_overrides = {}
-    if ri_fg > 0:
+    if ri_fg != 0.90:
         real_overrides["fg"] = ri_fg
-    if ri_land > 0:
+    if ri_land != 0.90:
         real_overrides["land"] = ri_land
-    if ri_dom > 0:
+    if ri_dom != 0.90:
         real_overrides["dominicks"] = ri_dom
 
     if result and st.button("Run Accept-Rule Checker"):
