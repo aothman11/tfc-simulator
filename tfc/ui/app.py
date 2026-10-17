@@ -120,6 +120,19 @@ if "result" not in st.session_state:
     st.session_state.result = None
 if "assumption_overrides" not in st.session_state:
     st.session_state.assumption_overrides = {}
+if "sidebar_view" not in st.session_state:
+    st.session_state.sidebar_view = None
+if "finance_expand" not in st.session_state:
+    st.session_state.finance_expand = False
+if "pit_line" not in st.session_state:
+    st.session_state.pit_line = "swiss_fill_2"
+if "pit_intervals" not in st.session_state:
+    st.session_state.pit_intervals = {p: 10 for p, _ in [
+        ("orange_1l", None), ("c_power_1l", None), ("mango_1l", None),
+        ("orange_pet", None), ("c_power_pet", None), ("mango_pet", None),
+    ]}
+if "pit_computed" not in st.session_state:
+    st.session_state.pit_computed = None
 
 
 def get_params() -> ScenarioParams:
@@ -135,24 +148,27 @@ def run_and_store():
 
 # ── Sidebar: My Company / Finance / PIT + Round selector ─────────────────────
 with st.sidebar:
-    st.markdown(
-        '<div style="text-align:center;padding:12px 0 4px 0;">'
-        '<span style="font-size:22px;">📋</span><br>'
-        '<span style="font-size:11px;font-weight:600;">My Company</span></div>',
-        unsafe_allow_html=True,
-    )
-    st.markdown(
-        '<div style="text-align:center;padding:8px 0 4px 0;">'
-        '<span style="font-size:22px;">💰</span><br>'
-        '<span style="font-size:11px;font-weight:600;">Finance</span></div>',
-        unsafe_allow_html=True,
-    )
-    st.markdown(
-        '<div style="text-align:center;padding:8px 0 4px 0;">'
-        '<span style="font-size:22px;">⚙️</span><br>'
-        '<span style="font-size:11px;font-weight:600;">Production<br>interval tool</span></div>',
-        unsafe_allow_html=True,
-    )
+    _sv = st.session_state.sidebar_view
+
+    def _nav_btn(label: str, view_key, icon: str):
+        active = _sv == view_key
+        if active:
+            st.markdown(
+                f'<div style="background:#8b1a4a;border-radius:5px;padding:8px 10px;'
+                f'margin:3px 0;cursor:default;text-align:center;">'
+                f'<span style="font-size:18px;">{icon}</span><br>'
+                f'<span style="font-size:11px;font-weight:700;color:white;">{label}</span>'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
+        else:
+            if st.button(f"{icon} {label}", use_container_width=True, key=f"nav_{view_key or 'company'}"):
+                st.session_state.sidebar_view = view_key
+                st.rerun()
+
+    _nav_btn("My Company", None, "📋")
+    _nav_btn("Finance", "finance", "💰")
+    _nav_btn("Production interval tool", "pit", "⚙️")
     st.divider()
 
     # Round selector styled as dots
@@ -296,8 +312,401 @@ def insight_panel(items: list) -> str:
     return f'<div class="insight-panel">{content}</div>'
 
 
-# ── R2 reference values ────────────────────────────────────────────────────────
+# ── R2 Finance reference values (from game Round 2 actuals) ──────────────────
 R2_ROI = 6.12
+R2_REV = 2_723_905
+R2_CONTRACTED = 2_711_810
+R2_BONUS = 12_095
+R2_GROSS_MARGIN = 1_351_998
+R2_MATERIAL = 905_718
+R2_DIRECT_MFG = 466_189       # bottling + mixing + supplier_admin (approximate)
+R2_INDIRECT = 1_136_599
+R2_WAREHOUSE = 431_483        # rm/fg locations, overflow, FTE, misc (approximate)
+R2_DISTRIBUTION = 200_090
+R2_INTEREST = -2_593
+R2_OVERHEAD = 507_619         # projects, energy, water, overhead_other, etc. (approximate)
+R2_OP = 215_399
+R2_INV = 3_517_221
+R2_EQUIP_INV = 802_000
+R2_WC_INV = 2_715_221
+
+
+def _fmt_eur(v: float) -> str:
+    return f"{v:,.0f}"
+
+
+def _diff_style(d: float) -> str:
+    col = "#1a7a1a" if d > 0 else ("#c0392b" if d < 0 else "#555")
+    return f'<span style="color:{col};font-weight:600;">{d:+,.0f}</span>'
+
+
+def _diff_pct(d: float) -> str:
+    col = "#1a7a1a" if d > 0 else ("#c0392b" if d < 0 else "#555")
+    return f'<span style="color:{col};font-weight:600;">{d:+.2f} pp</span>'
+
+
+def render_finance_report():
+    """Render the Finance report matching TFC game style."""
+    result = st.session_state.result
+
+    # Header
+    st.markdown(
+        '<div style="background:#dae8f0;padding:10px 16px;font-size:16px;'
+        'font-weight:700;color:#2d3561;border-radius:4px 4px 0 0;margin-bottom:0;">'
+        'Finance report'
+        '<span style="font-size:11px;font-weight:400;color:#888;margin-left:12px;">'
+        'Practice model – estimates only</span>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
+
+    c1, c2, _ = st.columns([1, 1, 4])
+    if c1.button("Expand all", key="fin_expand"):
+        st.session_state.finance_expand = True
+        st.rerun()
+    if c2.button("Collapse all", key="fin_collapse"):
+        st.session_state.finance_expand = False
+        st.rerun()
+
+    expanded = st.session_state.finance_expand
+
+    # Compute current values
+    if result:
+        pl = result.pl
+        cur_roi = pl.roi * 100
+        cur_rev = pl.realized_revenue
+        cur_contracted = pl.contracted_revenue
+        cur_bonus = pl.bonus_penalty
+        cur_gross = pl.realized_revenue - pl.material_purchases - pl.supplier_admin - pl.bottling_permanent - pl.bottling_flexible - pl.mixing - pl.transport
+        cur_material = pl.material_purchases
+        cur_direct_mfg = pl.supplier_admin + pl.bottling_permanent + pl.bottling_flexible + pl.mixing
+        cur_indirect = cur_gross - pl.operating_profit
+        cur_warehouse = pl.rm_locations + pl.rm_overflow + pl.rm_fte + pl.fg_locations + pl.fg_overflow + pl.fg_fte + pl.warehouse_misc
+        cur_distribution = pl.distribution
+        cur_interest = pl.interest_net
+        cur_overhead = cur_indirect - cur_warehouse - cur_distribution - cur_interest
+        cur_op = pl.operating_profit
+        cur_inv = pl.investment
+        cur_equip = pl.equipment_investment
+        cur_wc = pl.working_capital
+        cur_label = "Scenario"
+    else:
+        cur_roi = R2_ROI; cur_rev = R2_REV; cur_contracted = R2_CONTRACTED
+        cur_bonus = R2_BONUS; cur_gross = R2_GROSS_MARGIN; cur_material = R2_MATERIAL
+        cur_direct_mfg = R2_DIRECT_MFG; cur_indirect = R2_INDIRECT
+        cur_warehouse = R2_WAREHOUSE; cur_distribution = R2_DISTRIBUTION
+        cur_interest = R2_INTEREST; cur_overhead = R2_OVERHEAD
+        cur_op = R2_OP; cur_inv = R2_INV; cur_equip = R2_EQUIP_INV
+        cur_wc = R2_WC_INV
+        cur_label = "R2 (no calc)"
+
+    TH = (
+        '<tr style="background:#dae8f0;">'
+        f'<th style="padding:7px 12px;text-align:left;font-size:12px;color:#444;width:45%;">Round</th>'
+        f'<th style="padding:7px 12px;text-align:right;font-size:12px;color:#444;width:18%;">{cur_label}</th>'
+        f'<th style="padding:7px 12px;text-align:right;font-size:12px;color:#444;width:18%;">R2</th>'
+        f'<th style="padding:7px 12px;text-align:right;font-size:12px;color:#444;width:18%;">Difference</th>'
+        '</tr>'
+    )
+
+    def main_row(label: str, cur, r2, is_pct=False, indent=0, expandable=False):
+        pad = indent * 20
+        toggle = "▼" if (expandable and expanded) else ("▶" if expandable else "")
+        toggle_html = f'<span style="font-size:10px;color:#888;margin-right:6px;">{toggle}</span>' if expandable else '<span style="width:16px;display:inline-block;"></span>'
+        label_style = "font-weight:700;font-size:13px;" if indent == 0 else "font-size:13px;color:#444;"
+        if is_pct:
+            diff_html = _diff_pct(cur - r2)
+            cur_str = f"{cur:.2f}%"
+            r2_str = f"{r2:.2f}%"
+        else:
+            diff_html = _diff_style(cur - r2)
+            cur_str = _fmt_eur(cur)
+            r2_str = _fmt_eur(r2)
+        return (
+            f'<tr style="border-bottom:1px solid #eee;">'
+            f'<td style="padding:6px 12px;padding-left:{12+pad}px;{label_style}">'
+            f'{toggle_html}ⓘ {label}</td>'
+            f'<td style="padding:6px 12px;text-align:right;font-size:13px;">{cur_str}</td>'
+            f'<td style="padding:6px 12px;text-align:right;font-size:13px;">{r2_str}</td>'
+            f'<td style="padding:6px 12px;text-align:right;">{diff_html}</td>'
+            f'</tr>'
+        )
+
+    def sub_row(label: str, cur, r2):
+        return main_row(label, cur, r2, indent=1)
+
+    rows_html = [
+        '<table style="width:100%;border-collapse:collapse;font-size:13px;">',
+        TH,
+        main_row("ROI", cur_roi, R2_ROI, is_pct=True),
+        main_row("Realized revenue", cur_rev, R2_REV, expandable=True),
+    ]
+    if expanded:
+        rows_html += [
+            sub_row("Contracted sales", cur_contracted, R2_CONTRACTED),
+            sub_row("Bonus / Penalty", cur_bonus, R2_BONUS),
+        ]
+    rows_html += [
+        main_row("Gross margin", cur_gross, R2_GROSS_MARGIN, expandable=True),
+    ]
+    if expanded:
+        rows_html += [
+            sub_row("Revenue", cur_rev, R2_REV),
+            sub_row("Purchase costs", cur_material, R2_MATERIAL),
+            sub_row("Direct manufacturing", cur_direct_mfg, R2_DIRECT_MFG),
+        ]
+    rows_html += [
+        main_row("Indirect cost", cur_indirect, R2_INDIRECT, expandable=True),
+    ]
+    if expanded:
+        rows_html += [
+            sub_row("Warehousing", cur_warehouse, R2_WAREHOUSE),
+            sub_row("Distribution", cur_distribution, R2_DISTRIBUTION),
+            sub_row("Interest (net)", cur_interest, R2_INTEREST),
+            sub_row("Overhead / Other", cur_overhead, R2_OVERHEAD),
+        ]
+    rows_html += [
+        main_row("Operating profit", cur_op, R2_OP),
+        main_row("Investment", cur_inv, R2_INV, expandable=True),
+    ]
+    if expanded:
+        rows_html += [
+            sub_row("Equipment", cur_equip, R2_EQUIP_INV),
+            sub_row("Working capital", cur_wc, R2_WC_INV),
+        ]
+    rows_html.append('</table>')
+
+    st.markdown("\n".join(rows_html), unsafe_allow_html=True)
+
+    if not result:
+        st.info("Press **▶ Calculate** (in any tab) to see your scenario vs R2.")
+
+    # Download finance report
+    try:
+        import io, openpyxl
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Finance Report"
+        ws.append(["Line item", cur_label, "R2", "Difference"])
+        rows_export = [
+            ("ROI (%)", f"{cur_roi:.2f}", f"{R2_ROI:.2f}", f"{cur_roi - R2_ROI:+.2f}"),
+            ("Realized revenue", _fmt_eur(cur_rev), _fmt_eur(R2_REV), f"{cur_rev - R2_REV:+,.0f}"),
+            ("  Contracted sales", _fmt_eur(cur_contracted), _fmt_eur(R2_CONTRACTED), f"{cur_contracted - R2_CONTRACTED:+,.0f}"),
+            ("  Bonus / Penalty", _fmt_eur(cur_bonus), _fmt_eur(R2_BONUS), f"{cur_bonus - R2_BONUS:+,.0f}"),
+            ("Gross margin", _fmt_eur(cur_gross), _fmt_eur(R2_GROSS_MARGIN), f"{cur_gross - R2_GROSS_MARGIN:+,.0f}"),
+            ("Indirect cost", _fmt_eur(cur_indirect), _fmt_eur(R2_INDIRECT), f"{cur_indirect - R2_INDIRECT:+,.0f}"),
+            ("Operating profit", _fmt_eur(cur_op), _fmt_eur(R2_OP), f"{cur_op - R2_OP:+,.0f}"),
+            ("Investment", _fmt_eur(cur_inv), _fmt_eur(R2_INV), f"{cur_inv - R2_INV:+,.0f}"),
+        ]
+        for r in rows_export:
+            ws.append(r)
+        buf = io.BytesIO()
+        wb.save(buf)
+        buf.seek(0)
+        st.download_button(
+            "⬇ Download finance report", data=buf,
+            file_name="tfc_finance_report.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+    except ImportError:
+        st.caption("Install openpyxl for Excel export.")
+
+
+def render_pit_tool():
+    """Render the Production Interval Tool matching TFC game style."""
+    from tfc.engine.production import pit_utilization, LineConfig, ProductionPlan
+    from tfc.engine.loader import load_operations, load_products
+
+    ops = load_operations()
+    bl_data = ops["bottling_line"]
+    prods_data = load_products()
+    products_list = prods_data["products"]
+
+    LINE_OPTIONS = {
+        "Swiss Fill 2 (current)": "swiss_fill_2",
+        "Swiss Fill 1": "swiss_fill_1",
+        "TopSpeed 1": "topspeed_1",
+        "MultiFlex 1": "multiflex_1",
+    }
+    LINE_SPEEDS = {
+        "swiss_fill_2": bl_data.get("speed_lph", 3100),
+        "swiss_fill_1": 3100,
+        "topspeed_1": 3250,
+        "multiflex_1": 2950,
+    }
+    LINE_CO_SAME = {"swiss_fill_2": 2.0, "swiss_fill_1": 2.0, "topspeed_1": 4.0, "multiflex_1": 1.6}
+    LINE_CO_CROSS = {"swiss_fill_2": 4.0, "swiss_fill_1": 4.0, "topspeed_1": 6.0, "multiflex_1": 3.2}
+    LINE_STARTUP = {"swiss_fill_2": 0.10, "swiss_fill_1": 0.10, "topspeed_1": 0.10, "multiflex_1": 0.10}
+
+    # Header
+    st.markdown(
+        '<div style="background:#dae8f0;padding:10px 16px;font-size:16px;'
+        'font-weight:700;color:#2d3561;border-radius:4px 4px 0 0;">'
+        'Production interval tool'
+        '<span style="font-size:11px;font-weight:400;color:#888;margin-left:12px;">'
+        'Practice model – estimates only</span>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown("")
+
+    col_line, _ = st.columns([2, 3])
+    selected_label = col_line.selectbox(
+        "Select bottling line", list(LINE_OPTIONS.keys()),
+        index=0, key="pit_line_select",
+    )
+    line_key = LINE_OPTIONS[selected_label]
+    speed = LINE_SPEEDS[line_key]
+    co_same = LINE_CO_SAME[line_key]
+    co_cross = LINE_CO_CROSS[line_key]
+    startup_pct = LINE_STARTUP[line_key]
+
+    # Product table: demand (read-only) + interval input
+    PRODUCT_LABELS = {
+        "orange_1l": "Fressie Orange 1 liter",
+        "c_power_1l": "Fressie Orange/C-power 1 liter",
+        "mango_1l": "Fressie Orange/Mango 1 liter",
+        "orange_pet": "Fressie Orange PET",
+        "c_power_pet": "Fressie Orange/C-power PET",
+        "mango_pet": "Fressie Orange/Mango PET",
+    }
+    LITERS_PER_UNIT = {p["id"]: p.get("liters_per_piece", 1.0) for p in products_list}
+    BASE_DEMAND = {p["id"]: p.get("demand_base_week", 0) for p in products_list}
+
+    intervals = {}
+    hdr = (
+        '<table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:4px;">'
+        '<thead><tr style="background:#dae8f0;">'
+        '<th style="padding:6px 12px;text-align:left;font-size:12px;">Product</th>'
+        '<th style="padding:6px 12px;text-align:right;font-size:12px;">Demand (units/wk)</th>'
+        '<th style="padding:6px 12px;text-align:center;font-size:12px;">Production interval (days)</th>'
+        '</tr></thead>'
+        '<tbody>'
+    )
+    st.markdown(hdr + "</tbody></table>", unsafe_allow_html=True)
+
+    for pid, plabel in PRODUCT_LABELS.items():
+        c0, c1, c2 = st.columns([3, 2, 2])
+        c0.markdown(f"<div style='padding:4px 0;font-size:13px;'>💡 {plabel}</div>", unsafe_allow_html=True)
+        c1.markdown(f"<div style='padding:4px 0;font-size:13px;text-align:right;'>{BASE_DEMAND.get(pid, 0):,}</div>", unsafe_allow_html=True)
+        cur_int = st.session_state.pit_intervals.get(pid, 10)
+        new_int = c2.number_input(
+            "", min_value=5, max_value=30, value=cur_int, step=1,
+            key=f"pit_int_{pid}", label_visibility="collapsed",
+        )
+        intervals[pid] = new_int
+    st.session_state.pit_intervals = intervals
+
+    col_calc, _ = st.columns([1, 4])
+    run_pit = col_calc.button("Calculate", key="pit_calc", type="primary")
+
+    if run_pit:
+        # Use a single interval for the whole line (average)
+        avg_interval = int(sum(intervals.values()) / len(intervals))
+        shifts_n = 2
+        available_h = shifts_n * 8 * 5  # 80h/week
+
+        product_liters_wk = {pid: BASE_DEMAND[pid] * LITERS_PER_UNIT.get(pid, 1.0)
+                             for pid in PRODUCT_LABELS}
+        product_ids = list(PRODUCT_LABELS.keys())
+        carton = [p for p in product_ids if not p.endswith("_pet")]
+        pet = [p for p in product_ids if p.endswith("_pet")]
+
+        interval_wk = avg_interval / 7.0
+        same_co_per_interval = (max(0, len(carton) - 1) + max(0, len(pet) - 1))
+        cross_co_per_interval = 2 if (carton and pet) else 0
+
+        smed = 0.50  # approximate 50% SMED reduction
+        co_same_h = co_same * (1 - smed)
+        co_cross_h = co_cross * (1 - smed)
+
+        co_h_interval = same_co_per_interval * co_same_h + cross_co_per_interval * co_cross_h
+        co_formula_h_wk = (same_co_per_interval * co_same_h) / interval_wk
+        co_size_h_wk = (cross_co_per_interval * co_cross_h) / interval_wk
+        co_h_wk = co_h_interval / interval_wk
+
+        total_liters_wk = sum(product_liters_wk.values())
+        prod_h_wk = total_liters_wk / speed
+        startup_h_wk = prod_h_wk * startup_pct
+        total_h_wk = prod_h_wk + co_h_wk
+        utilization_pct = total_h_wk / available_h * 100
+
+        # Cost estimates (approximate, calibrated)
+        op_hourly = (5 * 20000 * shifts_n) / (52 * available_h)  # €/hour for all operators
+        startup_cost_yr = startup_h_wk * 52 * op_hourly
+        stock_cost_yr = total_liters_wk * interval_wk * 0.21  # empirical factor
+        co_cost_yr = co_h_wk * 52 * 130  # includes materials waste
+
+        st.session_state.pit_computed = {
+            "prod_h_wk": prod_h_wk,
+            "co_formula_h_wk": co_formula_h_wk,
+            "co_size_h_wk": co_size_h_wk,
+            "total_h_wk": total_h_wk,
+            "utilization_pct": utilization_pct,
+            "stock_cost": stock_cost_yr,
+            "startup_cost": startup_cost_yr,
+            "co_cost": co_cost_yr,
+            "total_cost": stock_cost_yr + startup_cost_yr + co_cost_yr,
+        }
+        st.rerun()
+
+    pit_r = st.session_state.pit_computed
+    if pit_r:
+        st.markdown("")
+
+        def _pit_td(label: str, value: str, right: bool = False) -> str:
+            align = "right" if right else "left"
+            color = "#f27d00" if right else "#333"
+            return (f'<td style="padding:6px 12px;text-align:{align};font-size:13px;color:{color};">'
+                    f'{label}</td><td style="padding:6px 12px;text-align:right;font-size:13px;font-weight:600;">{value}</td>')
+
+        costs_rows = [
+            ("Stock costs", f"€{pit_r['stock_cost']:,.0f}"),
+            ("Start up productivity loss", f"€{pit_r['startup_cost']:,.0f}"),
+            ("Changeover costs", f"€{pit_r['co_cost']:,.0f}"),
+            ("Total costs", f"€{pit_r['total_cost']:,.0f}"),
+        ]
+        cap_rows = [
+            ("Run time (hours)", f"{pit_r['prod_h_wk']:.1f}"),
+            ("Changeover time formula (hours)", f"{pit_r['co_formula_h_wk']:.1f}"),
+            ("Changeover time size (hours)", f"{pit_r['co_size_h_wk']:.1f}"),
+            ("Total time (hours)", f"{pit_r['total_h_wk']:.1f}"),
+            ("Utilization rate (%)", f"{pit_r['utilization_pct']:.0f}%"),
+        ]
+
+        n = max(len(costs_rows), len(cap_rows))
+        results_html = [
+            '<table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:8px;">',
+            '<thead><tr style="background:#dae8f0;">',
+            '<th colspan="2" style="padding:6px 12px;text-align:left;font-size:12px;font-weight:700;">Costs / year</th>',
+            '<th colspan="2" style="padding:6px 12px;text-align:left;font-size:12px;font-weight:700;">Capacity / week</th>',
+            '</tr></thead><tbody>',
+        ]
+        for i in range(n):
+            bg = "#f5f7fa" if i % 2 else "white"
+            c_label, c_val = costs_rows[i] if i < len(costs_rows) else ("", "")
+            k_label, k_val = cap_rows[i] if i < len(cap_rows) else ("", "")
+            results_html.append(
+                f'<tr style="background:{bg};border-bottom:1px solid #eee;">'
+                + _pit_td(c_label, c_val)
+                + _pit_td(k_label, k_val, right=True)
+                + '</tr>'
+            )
+        u = pit_r['utilization_pct']
+        u_color = "#c0392b" if u > 100 else ("#f27d00" if u > 80 else "#1a7a1a")
+        results_html.append(
+            f'<tr style="background:#fff8e1;border-top:2px solid #dae8f0;">'
+            f'<td colspan="4" style="padding:8px 12px;font-size:13px;">'
+            f'PIT utilization: <strong style="color:{u_color};">{u:.1f}%</strong>'
+            f' {"⚠ > 80% target" if u > 80 else "✓ Within target"}'
+            f'</td></tr>'
+        )
+        results_html.append('</tbody></table>')
+        st.markdown("\n".join(results_html), unsafe_allow_html=True)
+        st.caption("Costs are annual estimates. Practice model — numbers may differ from the real game.")
+
+
+# ── R2 reference values ────────────────────────────────────────────────────────
 R2_RM_UTIL = 93.4
 R2_FG_UTIL = 70.7
 R2_PROD_PLAN = 78.7
@@ -324,6 +733,19 @@ SUPPLIERS = [
     ("orange", "💡 Orange"), ("pet", "💡 PET"), ("pack", "💡 Pack"),
     ("mango", "💡 Mango"), ("vitamin_c", "💡 Vitamin C"),
 ]
+
+# ── Finance / PIT overlay views ───────────────────────────────────────────────
+_sv = st.session_state.sidebar_view
+if _sv in ("finance", "pit"):
+    _bcol, _ = st.columns([1, 5])
+    if _bcol.button("← Back to My Company", key="back_to_company"):
+        st.session_state.sidebar_view = None
+        st.rerun()
+    if _sv == "finance":
+        render_finance_report()
+    else:
+        render_pit_tool()
+    st.stop()
 
 # ── MAIN TABS ─────────────────────────────────────────────────────────────────
 st.markdown(
@@ -1351,66 +1773,15 @@ with tab_overview:
             for w in result.warnings:
                 st.error(f"⚠ {w}")
 
-        # Full P&L
-        with st.expander("Full P&L detail"):
-            pl = result.pl
-
-            def row(label, val):
-                return {"Line item": label, "Amount (€)": f"€{val:+,.0f}" if val != 0 else "—"}
-
-            full_rows = [
-                row("Realized Revenue", pl.realized_revenue),
-                row("  Contracted sales", pl.contracted_revenue),
-                row("  Bonus / Penalty", pl.bonus_penalty),
-                row("Material purchases", -pl.material_purchases),
-                row("Transport (PET)", -pl.transport),
-                row("Supplier admin", -pl.supplier_admin),
-                row("Bottling (permanent)", -pl.bottling_permanent),
-                row("Bottling (flexible)", -pl.bottling_flexible),
-                row("Mixing", -pl.mixing),
-                row("RM locations", -pl.rm_locations),
-                row("RM overflow", -pl.rm_overflow),
-                row("FG locations", -pl.fg_locations),
-                row("FG overflow", -pl.fg_overflow),
-                row("Scrap + Risk", -(pl.scrap + pl.risk)),
-                row("Projects", -pl.projects),
-                row("Distribution", -pl.distribution),
-                row("Interest (net)", -pl.interest_net),
-                row("VMI fees (suppliers)", -pl.vmi_fees_suppliers),
-                row("VMI fees (customers)", -pl.vmi_fees_customers),
-                row("Inflate PET (running)", -pl.inflate_pet_depreciation),
-                row("Overhead (other)", -pl.overhead_other),
-                row("OPERATING PROFIT", pl.operating_profit),
-            ]
-            st.table(full_rows)
-
-        # Excel export
-        try:
-            import io
-            import openpyxl
-            from openpyxl import Workbook
-            pl = result.pl
-            wb = Workbook()
-            ws = wb.active
-            ws.title = "P&L"
-            for r_data in [
-                ("Metric", "Value"),
-                ("Realized Revenue", pl.realized_revenue),
-                ("Operating Profit", pl.operating_profit),
-                ("Investment", pl.investment),
-                ("ROI", pl.roi),
-            ]:
-                ws.append(r_data)
-            buf = io.BytesIO()
-            wb.save(buf)
-            buf.seek(0)
-            st.download_button(
-                "⬇ Download P&L (.xlsx)", data=buf,
-                file_name="tfc_scenario.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            )
-        except ImportError:
-            st.caption("Install openpyxl for Excel export.")
+        st.divider()
+        st.markdown(
+            '<div style="background:#f5f7fa;border:1px solid #dae8f0;border-radius:4px;'
+            'padding:12px 16px;font-size:13px;color:#555;">'
+            '💰 For the full Finance report with two-round comparison, '
+            'click <strong>Finance</strong> in the left sidebar.'
+            '</div>',
+            unsafe_allow_html=True,
+        )
     else:
         st.info("Press **▶ Calculate** to run the simulation.")
 
